@@ -1,0 +1,17 @@
+{
+  "name": "per-monitor-zoom",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build"
+  },
+  "dependencies": {
+    "solid-js": "^1.9.8"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2",
+    "vite-plugin-solid": "^2.11.8"
+  }
+}
