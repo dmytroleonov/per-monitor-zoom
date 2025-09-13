@@ -1,11 +1,6 @@
 import browser from "webextension-polyfill";
-import { isMessage } from "./utils";
+import { getZoomFactor, isMessage } from "./utils";
 import type { MonitorChangeMessage } from "./types";
-
-const monitorZoom: Record<number, number> = {
-  1920: 1,
-  2560: 1.5,
-};
 
 async function onMonitorChange(
   msg: MonitorChangeMessage,
@@ -13,7 +8,8 @@ async function onMonitorChange(
 ): Promise<void> {
   if (!sender.tab) return;
 
-  const zoomFactor = monitorZoom[msg.width as number] ?? 1;
+  const { width, height } = msg;
+  const zoomFactor = await getZoomFactor({ width, height });
 
   const tabId = sender.tab.id;
   await browser.tabs.setZoom(tabId, zoomFactor);
