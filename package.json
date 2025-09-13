@@ -1,5 +1,6 @@
 {
-  "name": "per-monitor-zoom",
+  "name": "Per Monitor Zoom",
+  "description": "Set custom zoom level per monitor",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -10,8 +11,11 @@
     "solid-js": "^1.9.8"
   },
   "devDependencies": {
+    "@types/webextension-polyfill": "^0.12.3",
     "typescript": "~5.8.3",
     "vite": "^7.1.2",
-    "vite-plugin-solid": "^2.11.8"
+    "vite-plugin-solid": "^2.11.8",
+    "vite-plugin-web-extension": "^4.4.5",
+    "webextension-polyfill": "^0.12.0"
   }
 }
