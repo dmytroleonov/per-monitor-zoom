@@ -1,17 +1,16 @@
 import browser from "webextension-polyfill";
-import type { MonitorChangeMessage } from "./types";
+import type { MonitorChangeMessage, PageLoadMessage } from "./types";
 
-let lastWidth = 0;
-let lastHeight = 0;
+let { width: prevWidth, height: prevHeight } = window.screen;
 
 function sendMonitorChangeEvent() {
   const { width, height } = window.screen;
-  if (lastWidth === width && lastHeight === height) {
+  if (prevWidth === width && prevHeight === height) {
     return;
   }
 
-  lastWidth = width;
-  lastHeight = height;
+  prevWidth = width;
+  prevHeight = height;
   const message: MonitorChangeMessage = {
     type: "monitor-change",
     width,
@@ -20,5 +19,14 @@ function sendMonitorChangeEvent() {
   browser.runtime.sendMessage(message);
 }
 
+function sendPageLoadMessage() {
+  const message: PageLoadMessage = {
+    type: "page-load",
+    width: prevWidth,
+    height: prevHeight,
+  };
+  browser.runtime.sendMessage(message);
+}
+
 window.addEventListener("resize", sendMonitorChangeEvent);
-sendMonitorChangeEvent();
+sendPageLoadMessage();

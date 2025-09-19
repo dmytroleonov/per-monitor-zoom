@@ -24,4 +24,12 @@ export type MonitorChangeMessage = BaseMessage<
   }
 >;
 
-export type Message = MonitorChangeMessage;
+export type PageLoadMessage = BaseMessage<
+  "page-load",
+  {
+    width: number;
+    height: number;
+  }
+>;
+
+export type Message = MonitorChangeMessage | PageLoadMessage;

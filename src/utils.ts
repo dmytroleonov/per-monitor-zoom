@@ -48,10 +48,12 @@ export async function getZoomFactor(key: MonitorKey): Promise<number> {
   );
 }
 
-export function getUrlPatternFromOrigin(origin: string): string {
+export function getPatternFromUrl(url: string): string {
+  const origin = new URL(url).origin;
+
   const isLocalhost = origin.startsWith("http://localhost:");
   if (isLocalhost) {
-    return "http://localhost/*"
+    return "http://localhost/*";
   }
 
   return origin + "/*";
