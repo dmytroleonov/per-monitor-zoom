@@ -47,3 +47,12 @@ export async function getZoomFactor(key: MonitorKey): Promise<number> {
     (monitor) => monitor?.defaultZoomLevel ?? DEFAULT_ZOOM_LEVEL,
   );
 }
+
+export function getUrlPatternFromOrigin(origin: string): string {
+  const isLocalhost = origin.startsWith("http://localhost:");
+  if (isLocalhost) {
+    return "http://localhost/*"
+  }
+
+  return origin + "/*";
+}
