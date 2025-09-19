@@ -53,11 +53,14 @@ export function getMonitorKey(monitor: Monitor): MonitorKey {
   return { width: monitor.width, height: monitor.height };
 }
 
-export function isSpecificMonitor(
-  monitor: Monitor,
-  { width, height }: MonitorKey,
-): boolean {
-  return monitor.width === width && monitor.height === height;
+export function isSameMonitorKey(key1: MonitorKey, key2: MonitorKey): boolean {
+  return key1.width === key2.width && key1.height === key2.height;
+}
+
+export function isSpecificMonitor(monitor: Monitor, key: MonitorKey): boolean {
+  const monitorKey = getMonitorKey(monitor);
+
+  return isSameMonitorKey(monitorKey, key);
 }
 
 export async function findMonitor(
@@ -83,4 +86,10 @@ export function getPatternFromUrl(url: string): string {
   }
 
   return origin + "/*";
+}
+
+export function tabHasId(
+  tab: browser.Tabs.Tab,
+): tab is browser.Tabs.Tab & { id: number } {
+  return !!tab.id;
 }

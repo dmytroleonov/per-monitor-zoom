@@ -38,7 +38,6 @@ export type MonitorChangeMessage = BaseMessage<
     height: number;
   }
 >;
-
 export type PageLoadMessage = BaseMessage<
   "page-load",
   {
@@ -46,10 +45,21 @@ export type PageLoadMessage = BaseMessage<
     height: number;
   }
 >;
+export type ZoomChangeMessage = BaseMessage<
+  "zoom-change",
+  {
+    width: number;
+    height: number;
+  }
+>;
+export type BackgroundMessage =
+  | MonitorChangeMessage
+  | PageLoadMessage
+  | ZoomChangeMessage;
 
 export type GetMonitorKeyMessage = BaseMessage<"get-monitor-key", {}>;
-export type MonitorKeyMessage = BaseMessage<"monitor-key", MonitorKey>;
+export type StartZoomMessage = BaseMessage<"start-zoom", {}>;
+export type ContentMessage = GetMonitorKeyMessage | StartZoomMessage;
 
-export type BackgroundMessage = MonitorChangeMessage | PageLoadMessage;
-export type ContentMessage = GetMonitorKeyMessage;
+export type MonitorKeyMessage = BaseMessage<"monitor-key", MonitorKey>;
 export type ContentResponseMessage = MonitorKeyMessage;
