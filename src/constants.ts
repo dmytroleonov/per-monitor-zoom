@@ -1,5 +1,6 @@
-export const messageTypes = ["monitor-change"] as const;
-export type MessageType = (typeof messageTypes)[number];
+export const BACKGROUND_MESSAGE_TYPES = ["monitor-change", "page-load"] as const;
+export const CONTENT_MESSAGE_TYPES = ["get-monitor-key"] as const;
+export const CONTENT_RESPONSE_MESSAGE_TYPES = ["monitor-key"] as const;
 
 export const MONITORS_KEY = "monitors";
 export const ZOOM_LEVELS = [

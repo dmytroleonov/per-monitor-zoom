@@ -1,5 +1,5 @@
 import browser from "webextension-polyfill";
-import { getPatternFromUrl, getZoomFactor, isMessage } from "./utils";
+import { getPatternFromUrl, getZoomFactor, isBackgroundMessage } from "./utils";
 import type { MonitorChangeMessage, PageLoadMessage } from "./types";
 
 async function setZoom(
@@ -55,7 +55,7 @@ const onMessageListener: browser.Runtime.OnMessageListenerAsync = async (
   msg,
   sender,
 ) => {
-  if (!isMessage(msg)) {
+  if (!isBackgroundMessage(msg)) {
     return;
   }
 

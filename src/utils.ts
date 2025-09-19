@@ -1,14 +1,40 @@
 import browser from "webextension-polyfill";
 import {
   DEFAULT_ZOOM_LEVEL,
-  messageTypes,
+  BACKGROUND_MESSAGE_TYPES,
   MONITORS_KEY,
-  type MessageType,
+  CONTENT_MESSAGE_TYPES,
+  CONTENT_RESPONSE_MESSAGE_TYPES,
 } from "./constants";
-import type { Message, Monitor, MonitorKey } from "./types";
+import type {
+  BackgroundMessage,
+  BackgroundMessageType,
+  ContentMessage,
+  ContentMessageType,
+  ContentResponseMessage,
+  ContentResponseMessageType,
+  Monitor,
+  MonitorKey,
+} from "./types";
 
-export function isMessage(msg: unknown): msg is Message {
-  return messageTypes.includes((msg as { type?: string })?.type as MessageType);
+export function isBackgroundMessage(msg: unknown): msg is BackgroundMessage {
+  return BACKGROUND_MESSAGE_TYPES.includes(
+    (msg as { type?: string })?.type as BackgroundMessageType,
+  );
+}
+
+export function isContentMessage(msg: unknown): msg is ContentMessage {
+  return CONTENT_MESSAGE_TYPES.includes(
+    (msg as { type?: string })?.type as ContentMessageType,
+  );
+}
+
+export function isContentResponseMessage(
+  msg: unknown,
+): msg is ContentResponseMessage {
+  return CONTENT_RESPONSE_MESSAGE_TYPES.includes(
+    (msg as { type?: string })?.type as ContentResponseMessageType,
+  );
 }
 
 export async function getMonitors(): Promise<Monitor[]> {

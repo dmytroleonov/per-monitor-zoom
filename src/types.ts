@@ -1,3 +1,18 @@
+import type {
+  BACKGROUND_MESSAGE_TYPES,
+  CONTENT_MESSAGE_TYPES,
+  CONTENT_RESPONSE_MESSAGE_TYPES,
+} from "./constants";
+
+export type BackgroundMessageType = (typeof BACKGROUND_MESSAGE_TYPES)[number];
+export type ContentMessageType = (typeof CONTENT_MESSAGE_TYPES)[number];
+export type ContentResponseMessageType =
+  (typeof CONTENT_RESPONSE_MESSAGE_TYPES)[number];
+export type MessageType =
+  | ContentMessageType
+  | BackgroundMessageType
+  | ContentResponseMessageType;
+
 export type Monitor = {
   width: number;
   height: number;
@@ -10,7 +25,7 @@ export type MonitorKey = {
 };
 
 type BaseMessage<
-  TType extends string,
+  TType extends MessageType,
   TContent extends Record<string, unknown>,
 > = {
   type: TType;
@@ -32,4 +47,9 @@ export type PageLoadMessage = BaseMessage<
   }
 >;
 
-export type Message = MonitorChangeMessage | PageLoadMessage;
+export type GetMonitorKeyMessage = BaseMessage<"get-monitor-key", {}>;
+export type MonitorKeyMessage = BaseMessage<"monitor-key", MonitorKey>;
+
+export type BackgroundMessage = MonitorChangeMessage | PageLoadMessage;
+export type ContentMessage = GetMonitorKeyMessage;
+export type ContentResponseMessage = MonitorKeyMessage;
