@@ -1,4 +1,8 @@
-export const BACKGROUND_MESSAGE_TYPES = ["monitor-change", "page-load"] as const;
+export const BACKGROUND_MESSAGE_TYPES = [
+  "monitor-change",
+  "page-load",
+  "zoom-change",
+] as const;
 export const CONTENT_MESSAGE_TYPES = ["get-monitor-key"] as const;
 export const CONTENT_RESPONSE_MESSAGE_TYPES = ["monitor-key"] as const;
 

@@ -1,19 +1,46 @@
 import browser from "webextension-polyfill";
-import { getPatternFromUrl, getZoomFactor, isBackgroundMessage } from "./utils";
-import type { MonitorChangeMessage, PageLoadMessage } from "./types";
+import {
+  getPatternFromUrl,
+  getZoomFactor,
+  isBackgroundMessage,
+  isSameMonitorKey,
+} from "./utils";
+import type {
+  GetMonitorKeyMessage,
+  MonitorChangeMessage,
+  MonitorKey,
+  MonitorKeyMessage,
+  PageLoadMessage,
+  ZoomChangeMessage,
+} from "./types";
 
-async function setZoom(
-  tabId: number | undefined,
-  zoomFactor: number,
-): Promise<void> {
-  const currentZoomFactor = await browser.tabs.getZoom(tabId);
-  if (currentZoomFactor === zoomFactor) {
-    return;
-  }
+const tabsBeingZoomed = new Set<number>();
+
+async function setZoom(tabId: number, zoomFactor: number): Promise<void> {
   await browser.tabs.setZoom(tabId, zoomFactor);
-  await browser.tabs.setZoomSettings(tabId, {
-    scope: "per-tab",
-  });
+}
+
+function lockTabs(tabIds: number[]): void {
+  for (const tab of tabIds) {
+    tabsBeingZoomed.add(tab);
+  }
+}
+
+function unLockTabs(tabIds: number[]): void {
+  for (const tab of tabIds) {
+    tabsBeingZoomed.delete(tab);
+  }
+}
+
+async function zoomTabs(tabIds: number[], zoomFactor: number): Promise<void> {
+  lockTabs(tabIds);
+  try {
+    await Promise.allSettled(
+      tabIds.map(async (tabId) => setZoom(tabId, zoomFactor)),
+    );
+  } finally {
+    unLockTabs(tabIds);
+  }
 }
 
 async function setZoomForAllWindowTabs(
@@ -24,14 +51,17 @@ async function setZoomForAllWindowTabs(
     windowId,
   });
 
-  tabs.forEach((tab) => setZoom(tab.id, zoomFactor));
+  const tabIdsToZoom = tabs.filter((tab) => tab.id).map((tab) => tab.id!);
+  await zoomTabs(tabIdsToZoom, zoomFactor);
 }
 
 async function onMonitorChange(
   msg: MonitorChangeMessage,
   sender: browser.Runtime.MessageSender,
 ): Promise<void> {
-  if (!sender.tab || !sender.tab.windowId) return;
+  if (!sender.tab || !sender.tab.windowId) {
+    return;
+  }
 
   const { width, height } = msg;
   const { windowId } = sender.tab;
@@ -43,18 +73,76 @@ async function onPageLoad(
   msg: PageLoadMessage,
   sender: browser.Runtime.MessageSender,
 ): Promise<void> {
-  if (!sender.tab || !sender.tab.windowId) return;
+  if (!sender.tab?.id) {
+    return;
+  }
 
   const { width, height } = msg;
-  const { id } = sender.tab;
+  const { id: tabId } = sender.tab;
   const zoomFactor = await getZoomFactor({ width, height });
-  await setZoom(id, zoomFactor);
+  await browser.tabs.setZoomSettings(tabId, {
+    scope: "per-tab",
+  });
+  await zoomTabs([tabId], zoomFactor);
+}
+
+async function sendGetMonitorKeyMessage(tabId: number): Promise<MonitorKey> {
+  const message: GetMonitorKeyMessage = { type: "get-monitor-key" };
+  const { width, height }: MonitorKeyMessage = await browser.tabs.sendMessage(
+    tabId,
+    message,
+  );
+
+  return {
+    width,
+    height,
+  };
+}
+
+async function onZoomChange(
+  msg: ZoomChangeMessage,
+  sender: browser.Runtime.MessageSender,
+): Promise<void> {
+  if (!sender.tab?.id || !sender.tab.url) {
+    return;
+  }
+  const {
+    tab: { id: tabId, url },
+  } = sender;
+  if (!url || tabsBeingZoomed.has(tabId)) {
+    return;
+  }
+
+  const { width, height } = msg;
+  const zoomTabMonitorKey = { width, height };
+
+  const zoomFactor = await browser.tabs.getZoom(tabId);
+
+  const urlPattern = getPatternFromUrl(url);
+  const tabs = await browser.tabs.query({
+    url: urlPattern,
+  });
+  const tabIdsToZoom = tabs
+    .filter((tab) => tab.id && tab.id !== tabId)
+    .map((tab) => tab.id!);
+  lockTabs(tabIdsToZoom);
+
+  await Promise.allSettled(
+    tabIdsToZoom.map(async (tabId) => {
+      const monitorKey = await sendGetMonitorKeyMessage(tabId);
+      if (isSameMonitorKey(zoomTabMonitorKey, monitorKey)) {
+        await setZoom(tabId, zoomFactor);
+      }
+    }),
+  );
+
+  unLockTabs(tabIdsToZoom);
 }
 
 const onMessageListener: browser.Runtime.OnMessageListenerAsync = async (
   msg,
   sender,
-) => {
+): Promise<void> => {
   if (!isBackgroundMessage(msg)) {
     return;
   }
@@ -66,45 +154,10 @@ const onMessageListener: browser.Runtime.OnMessageListenerAsync = async (
     case "page-load":
       await onPageLoad(msg, sender);
       break;
+    case "zoom-change":
+      await onZoomChange(msg, sender);
+      break;
   }
 };
 
-function onZoomChangeListener(
-  zoomChangeInfo: browser.Tabs.OnZoomChangeZoomChangeInfoType,
-): void {
-  const { tabId, newZoomFactor, oldZoomFactor } = zoomChangeInfo;
-  if (oldZoomFactor === newZoomFactor) {
-    return;
-  }
-  (async () => {
-    await browser.tabs.setZoomSettings(tabId, {
-      scope: "per-tab",
-    });
-
-    const tab = await browser.tabs.get(tabId);
-    if (!tab.windowId || !tab.url || !tab.active) {
-      return;
-    }
-    const tabWindow = await browser.windows.get(tab.windowId);
-    if (!tabWindow.focused) {
-      return;
-    }
-
-    const urlPattern = getPatternFromUrl(tab.url);
-    const tabs = await browser.tabs.query({
-      url: urlPattern,
-      // TODO: query each tab for it's width/height do determin wheather to
-      // zoom it or not
-      windowId: tab.windowId,
-    });
-
-    tabs.forEach((tab) => {
-      if (tab.id !== tabId) {
-        setZoom(tab.id, newZoomFactor);
-      }
-    });
-  })();
-}
-
 browser.runtime.onMessage.addListener(onMessageListener);
-browser.tabs.onZoomChange.addListener(onZoomChangeListener);
