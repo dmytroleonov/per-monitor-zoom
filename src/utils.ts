@@ -87,9 +87,3 @@ export function getPatternFromUrl(url: string): string {
 
   return origin + "/*";
 }
-
-export function tabHasId(
-  tab: browser.Tabs.Tab,
-): tab is browser.Tabs.Tab & { id: number } {
-  return !!tab.id;
-}

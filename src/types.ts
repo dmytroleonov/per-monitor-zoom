@@ -1,3 +1,4 @@
+import type { Tabs } from "webextension-polyfill";
 import type {
   BACKGROUND_MESSAGE_TYPES,
   CONTENT_MESSAGE_TYPES,
@@ -24,6 +25,8 @@ export type MonitorKey = {
   height: number;
 };
 
+export type TabWithId = Tabs.Tab & { id: number };
+
 type BaseMessage<
   TType extends MessageType,
   TContent extends Record<string, unknown>,
@@ -31,31 +34,15 @@ type BaseMessage<
   type: TType;
 } & TContent;
 
-export type MonitorChangeMessage = BaseMessage<
-  "monitor-change",
-  {
-    width: number;
-    height: number;
-  }
->;
-export type PageLoadMessage = BaseMessage<
-  "page-load",
-  {
-    width: number;
-    height: number;
-  }
->;
-export type ZoomChangeMessage = BaseMessage<
-  "zoom-change",
-  {
-    width: number;
-    height: number;
-  }
->;
+export type MonitorChangeMessage = BaseMessage<"monitor-change", MonitorKey>;
+export type PageLoadMessage = BaseMessage<"page-load", MonitorKey>;
+export type ZoomChangeMessage = BaseMessage<"zoom-change", MonitorKey>;
+export type ZoomResetMessage = BaseMessage<"zoom-reset", MonitorKey>;
 export type BackgroundMessage =
   | MonitorChangeMessage
   | PageLoadMessage
-  | ZoomChangeMessage;
+  | ZoomChangeMessage
+  | ZoomResetMessage;
 
 export type GetMonitorKeyMessage = BaseMessage<"get-monitor-key", {}>;
 export type StartZoomMessage = BaseMessage<"start-zoom", {}>;

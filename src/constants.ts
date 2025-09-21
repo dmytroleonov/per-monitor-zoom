@@ -2,6 +2,7 @@ export const BACKGROUND_MESSAGE_TYPES = [
   "monitor-change",
   "page-load",
   "zoom-change",
+  "zoom-reset",
 ] as const;
 export const CONTENT_MESSAGE_TYPES = ["get-monitor-key", "start-zoom"] as const;
 export const CONTENT_RESPONSE_MESSAGE_TYPES = ["monitor-key"] as const;

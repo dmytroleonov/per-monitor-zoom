@@ -5,10 +5,17 @@ import type {
   MonitorKeyMessage,
   PageLoadMessage,
   ZoomChangeMessage,
+  ZoomResetMessage,
 } from "./types";
 import { isContentMessage } from "./utils";
 
-let { width: prevWidth, height: prevHeight } = window.screen;
+function getKey(): MonitorKey {
+  const { width, height } = window.screen;
+
+  return { width, height };
+}
+
+let { width: prevWidth, height: prevHeight } = getKey();
 let { devicePixelRatio: prevDevicePixelRatio } = window;
 
 let isZooming = false;
@@ -22,29 +29,30 @@ function startZoom(): void {
   }, 1000);
 }
 
-let sendZoomChangeMessageTimeout: number | undefined = undefined;
+let zoomChangeTimeout: number | undefined = undefined;
 
-function sendZoomChangeMessage({ width, height }: MonitorKey): void {
-  window.clearTimeout(sendZoomChangeMessageTimeout);
+function sendZoomChangeMessage(): void {
+  window.clearTimeout(zoomChangeTimeout);
+  const {width, height} = getKey();
   const message: ZoomChangeMessage = {
     type: "zoom-change",
     width,
     height,
   };
-  sendZoomChangeMessageTimeout = window.setTimeout(() => {
+  zoomChangeTimeout = window.setTimeout(() => {
     browser.runtime.sendMessage(message);
   }, 1000);
 }
 
 function onResizeListener(): void {
-  const { width, height } = window.screen;
+  const { width, height } = getKey();
   if (prevWidth === width && prevHeight === height) {
     const { devicePixelRatio } = window;
     if (prevDevicePixelRatio === devicePixelRatio || isZooming) {
       return;
     }
     prevDevicePixelRatio = devicePixelRatio;
-    sendZoomChangeMessage({ width, height });
+    sendZoomChangeMessage();
     return;
   }
 
@@ -95,6 +103,20 @@ const onMessageListener: browser.Runtime.OnMessageListenerCallback = (
   return true;
 };
 
+function sendZoomResetMessage(): void {
+  const { width, height } = getKey();
+  const message: ZoomResetMessage = { type: "zoom-reset", width, height };
+  browser.runtime.sendMessage(message);
+}
+
+function onKeyDownListener(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+    e.preventDefault();
+    sendZoomResetMessage();
+  }
+}
+
 window.addEventListener("resize", onResizeListener);
+window.addEventListener("keydown", onKeyDownListener);
 browser.runtime.onMessage.addListener(onMessageListener);
 sendPageLoadMessage();

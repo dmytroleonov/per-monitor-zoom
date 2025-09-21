@@ -1,11 +1,11 @@
 import browser from "webextension-polyfill";
 import {
+  findMonitor,
   getPatternFromUrl,
   getZoomFactor,
   isBackgroundMessage,
   isContentResponseMessage,
   isSameMonitorKey,
-  tabHasId,
 } from "./utils";
 import type {
   GetMonitorKeyMessage,
@@ -14,7 +14,9 @@ import type {
   MonitorKeyMessage,
   PageLoadMessage,
   StartZoomMessage,
+  TabWithId,
   ZoomChangeMessage,
+  ZoomResetMessage,
 } from "./types";
 
 async function setZoom(tabId: number, zoomFactor: number): Promise<void> {
@@ -40,8 +42,9 @@ async function setZoomForAllWindowTabs(
   const tabs = await browser.tabs.query({
     windowId,
   });
-
-  const tabIdsToZoom = tabs.filter(tabHasId).map((tab) => tab.id);
+  const tabIdsToZoom = tabs
+    .filter((tab): tab is TabWithId => !!tab.id)
+    .map((tab) => tab.id);
   await zoomTabs(tabIdsToZoom, zoomFactor);
 }
 
@@ -116,10 +119,45 @@ async function onZoomChange(
     url: urlPattern,
   });
   const tabIdsToZoom = tabs
-    .filter(
-      (tab): tab is browser.Tabs.Tab & { id: number } =>
-        tabHasId(tab) && tab.id !== tabId,
-    )
+    .filter((tab): tab is TabWithId => !!tab.id && tab.id !== tabId)
+    .map((tab) => tab.id);
+
+  await Promise.allSettled(
+    tabIdsToZoom.map(async (tabId) => {
+      const monitorKey = await sendGetMonitorKeyMessage(tabId);
+      if (isSameMonitorKey(zoomTabMonitorKey, monitorKey)) {
+        await setZoom(tabId, zoomFactor);
+      }
+    }),
+  );
+}
+
+async function onZoomReset(
+  msg: ZoomResetMessage,
+  sender: browser.Runtime.MessageSender,
+): Promise<void> {
+  if (!sender?.tab?.url) {
+    return;
+  }
+
+  const {
+    tab: { url },
+  } = sender;
+  const { width, height } = msg;
+  const zoomTabMonitorKey = { width, height };
+
+  const monitor = await findMonitor(zoomTabMonitorKey);
+  if (!monitor) {
+    return;
+  }
+
+  const zoomFactor = monitor.defaultZoomLevel;
+  const urlPattern = getPatternFromUrl(url);
+  const tabs = await browser.tabs.query({
+    url: urlPattern,
+  });
+  const tabIdsToZoom = tabs
+    .filter((tab): tab is TabWithId => !!tab.id)
     .map((tab) => tab.id);
 
   await Promise.allSettled(
@@ -149,6 +187,9 @@ const onMessageListener: browser.Runtime.OnMessageListenerAsync = async (
       break;
     case "zoom-change":
       await onZoomChange(msg, sender);
+      break;
+    case "zoom-reset":
+      await onZoomReset(msg, sender);
       break;
   }
 };
