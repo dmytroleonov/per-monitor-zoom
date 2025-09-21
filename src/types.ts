@@ -17,7 +17,7 @@ export type MessageType =
 export type Monitor = {
   width: number;
   height: number;
-  defaultZoomLevel: number;
+  defaultZoomFactor: number;
 };
 
 export type MonitorKey = {

@@ -151,7 +151,7 @@ async function onZoomReset(
     return;
   }
 
-  const zoomFactor = monitor.defaultZoomLevel;
+  const zoomFactor = monitor.defaultZoomFactor;
   const urlPattern = getPatternFromUrl(url);
   const tabs = await browser.tabs.query({
     url: urlPattern,

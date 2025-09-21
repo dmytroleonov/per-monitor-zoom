@@ -6,7 +6,7 @@ import {
   isSpecificMonitor,
   saveMonitors,
 } from "./utils";
-import { DEFAULT_ZOOM_LEVEL, ZOOM_LEVELS } from "./constants";
+import { DEFAULT_ZOOM_FACTOR, ZOOM_FACTORS } from "./constants";
 
 export function Popup() {
   const [monitors, setMonitors] = createSignal<Monitor[]>([]);
@@ -30,18 +30,18 @@ export function Popup() {
     }
     setMonitors([
       ...monitors(),
-      { width, height, defaultZoomLevel: DEFAULT_ZOOM_LEVEL },
+      { width, height, defaultZoomFactor: DEFAULT_ZOOM_FACTOR },
     ]);
   };
 
-  const changeDefaultZoomLevel = (
+  const changeDefaultZoomFactor = (
     key: MonitorKey,
-    newDefaultZoomLevel: number,
+    newDefaultZoomFactor: number,
   ): void => {
     setMonitors((prev) =>
       prev.map((monitor) =>
         isSpecificMonitor(monitor, key)
-          ? { ...monitor, defaultZoomLevel: newDefaultZoomLevel }
+          ? { ...monitor, defaultZoomFactor: newDefaultZoomFactor }
           : monitor,
       ),
     );
@@ -72,17 +72,17 @@ export function Popup() {
             >
               {monitor.width}x{monitor.height}
               <select
-                value={monitor.defaultZoomLevel}
+                value={monitor.defaultZoomFactor}
                 onChange={(e) =>
-                  changeDefaultZoomLevel(
+                  changeDefaultZoomFactor(
                     getMonitorKey(monitor),
                     +e.target.value,
                   )
                 }
               >
-                <For each={ZOOM_LEVELS}>
-                  {(zoomLevel) => (
-                    <option value={zoomLevel}>{zoomLevel}</option>
+                <For each={ZOOM_FACTORS}>
+                  {(zoomFactor) => (
+                    <option value={zoomFactor}>{zoomFactor}</option>
                   )}
                 </For>
               </select>

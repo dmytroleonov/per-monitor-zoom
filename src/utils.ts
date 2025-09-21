@@ -1,6 +1,6 @@
 import browser from "webextension-polyfill";
 import {
-  DEFAULT_ZOOM_LEVEL,
+  DEFAULT_ZOOM_FACTOR,
   BACKGROUND_MESSAGE_TYPES,
   MONITORS_KEY,
   CONTENT_MESSAGE_TYPES,
@@ -73,7 +73,7 @@ export async function findMonitor(
 
 export async function getZoomFactor(key: MonitorKey): Promise<number> {
   return findMonitor(key).then(
-    (monitor) => monitor?.defaultZoomLevel ?? DEFAULT_ZOOM_LEVEL,
+    (monitor) => monitor?.defaultZoomFactor ?? DEFAULT_ZOOM_FACTOR,
   );
 }
 
