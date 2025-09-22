@@ -77,13 +77,72 @@ export async function getZoomFactor(key: MonitorKey): Promise<number> {
   );
 }
 
-export function getPatternFromUrl(url: string): string {
-  const origin = new URL(url).origin;
+function getMonitorOriginKey(key: MonitorKey, origin: string): string {
+  const { width, height } = key;
 
-  const isLocalhost = origin.startsWith("http://localhost:");
-  if (isLocalhost) {
-    return "http://localhost/*";
+  return `${width}x${height}:${origin}`;
+}
+
+async function getZoomFactorByOriginKey(
+  key: string,
+): Promise<number | undefined> {
+  const data = (await browser.storage.local.get(key)) as {
+    [key]?: number;
+  };
+
+  return data[key];
+}
+
+async function setZoomFactorByOriginKey(
+  key: string,
+  zoomFactor: number,
+): Promise<void> {
+  await browser.storage.local.set({ [key]: zoomFactor });
+}
+
+async function deleteZoomFactorByOriginKey(key: string): Promise<void> {
+  await browser.storage.local.remove(key);
+}
+
+export async function getZoomFactorByUrl(
+  key: MonitorKey,
+  url: string,
+): Promise<number> {
+  const origin = getOrigin(url);
+  const originKey = getMonitorOriginKey(key, origin);
+  const zoomFactorByOrigin = await getZoomFactorByOriginKey(originKey);
+  const defaultZoomFactor = await getZoomFactor(key);
+
+  return zoomFactorByOrigin ?? defaultZoomFactor;
+}
+
+export async function setZoomFactorByUrl(
+  key: MonitorKey,
+  url: string,
+  zoomFactor: number,
+): Promise<void> {
+  const origin = getOrigin(url);
+  const originKey = getMonitorOriginKey(key, origin);
+  const defaultZoomFactor = await getZoomFactor(key);
+
+  if (zoomFactor === defaultZoomFactor) {
+    await deleteZoomFactorByOriginKey(originKey);
+    return;
   }
+
+  await setZoomFactorByOriginKey(originKey, zoomFactor);
+}
+
+function getOrigin(url: string): string {
+  const origin = new URL(url).origin;
+  // remove port number
+  const match = origin.match(/^(.*?)(:\d+)?$/);
+
+  return match ? match[1] : origin;
+}
+
+export function getPatternFromUrl(url: string): string {
+  const origin = getOrigin(url);
 
   return origin + "/*";
 }
