@@ -29,19 +29,14 @@ function startZoom(): void {
   }, 1000);
 }
 
-let zoomChangeTimeout: number | undefined = undefined;
-
 function sendZoomChangeMessage(): void {
-  window.clearTimeout(zoomChangeTimeout);
-  const {width, height} = getKey();
+  const { width, height } = getKey();
   const message: ZoomChangeMessage = {
     type: "zoom-change",
     width,
     height,
   };
-  zoomChangeTimeout = window.setTimeout(() => {
-    browser.runtime.sendMessage(message);
-  }, 1000);
+  browser.runtime.sendMessage(message);
 }
 
 function onResizeListener(): void {
