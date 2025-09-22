@@ -20,10 +20,20 @@ import type {
   ZoomResetMessage,
 } from "./types";
 
-async function setZoom(tabId: number, zoomFactor: number): Promise<void> {
+type SetZoomOptions = {
+  suppressZoomEvents?: boolean;
+};
+
+async function setZoom(
+  tabId: number,
+  zoomFactor: number,
+  { suppressZoomEvents = true }: SetZoomOptions = {},
+): Promise<void> {
   const message: StartZoomMessage = { type: "start-zoom" };
   try {
-    await browser.tabs.sendMessage(tabId, message);
+    if (suppressZoomEvents) {
+      await browser.tabs.sendMessage(tabId, message);
+    }
     await browser.tabs.setZoom(tabId, zoomFactor);
   } catch {
     console.error(`Unable to set zoom on tab with id=${tabId}`);
@@ -147,12 +157,12 @@ async function onZoomReset(
   msg: ZoomResetMessage,
   sender: browser.Runtime.MessageSender,
 ): Promise<void> {
-  if (!sender?.tab?.url) {
+  if (!sender?.tab?.url || !sender.tab.id) {
     return;
   }
 
   const {
-    tab: { url },
+    tab: { url, id: tabId },
   } = sender;
   const { width, height } = msg;
   const zoomTabMonitorKey = { width, height };
@@ -168,10 +178,11 @@ async function onZoomReset(
     url: urlPattern,
   });
   const tabIdsToZoom = tabs
-    .filter((tab): tab is TabWithId => !!tab.id)
+    .filter((tab): tab is TabWithId => !!tab.id && tab.id !== tabId)
     .map((tab) => tab.id);
 
   await setZoomFactorByUrl({ width, height }, url, zoomFactor);
+  await setZoom(tabId, zoomFactor, { suppressZoomEvents: false });
   await Promise.allSettled(
     tabIdsToZoom.map(async (tabId) => {
       const monitorKey = await sendGetMonitorKeyMessage(tabId);
