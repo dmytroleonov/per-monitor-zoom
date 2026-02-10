@@ -81,7 +81,7 @@ const onMessageListener: browser.Runtime.OnMessageListenerCallback = (
 
   switch (msg.type) {
     case "get-monitor-key":
-      const { width, height } = window.screen;
+      const { width, height } = getKey();
       const response: MonitorKeyMessage = {
         type: "monitor-key",
         width,
@@ -105,13 +105,27 @@ function sendZoomResetMessage(): void {
 }
 
 function onKeyDownListener(e: KeyboardEvent): void {
-  if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+  if (!e.ctrlKey && !e.metaKey) {
+    return;
+  }
+
+  if (e.key === "0") {
     e.preventDefault();
     sendZoomResetMessage();
   }
 }
 
+function onPageShowListener(e: PageTransitionEvent) {
+  if (e.persisted) {
+    sendPageLoadMessage();
+  }
+}
+
+
+sendPageLoadMessage();
+window.addEventListener("pageshow", onPageShowListener);
+
 window.addEventListener("resize", onResizeListener);
 window.addEventListener("keydown", onKeyDownListener);
+
 browser.runtime.onMessage.addListener(onMessageListener);
-sendPageLoadMessage();
