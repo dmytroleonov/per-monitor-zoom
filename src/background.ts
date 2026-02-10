@@ -29,9 +29,9 @@ async function setZoom(
   zoomFactor: number,
   { suppressZoomEvents = true }: SetZoomOptions = {},
 ): Promise<void> {
-  const message: StartZoomMessage = { type: "start-zoom" };
   try {
     if (suppressZoomEvents) {
+      const message: StartZoomMessage = { type: "start-zoom" };
       await browser.tabs.sendMessage(tabId, message);
     }
     await browser.tabs.setZoom(tabId, zoomFactor);
