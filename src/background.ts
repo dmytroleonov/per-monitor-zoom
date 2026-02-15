@@ -14,26 +14,13 @@ import type {
   MonitorKey,
   MonitorKeyMessage,
   PageLoadMessage,
-  StartZoomMessage,
   TabWithId,
   ZoomChangeMessage,
   ZoomResetMessage,
 } from "./types";
 
-type SetZoomOptions = {
-  suppressZoomEvents?: boolean;
-};
-
-async function setZoom(
-  tabId: number,
-  zoomFactor: number,
-  { suppressZoomEvents = true }: SetZoomOptions = {},
-): Promise<void> {
+async function setZoom(tabId: number, zoomFactor: number): Promise<void> {
   try {
-    if (suppressZoomEvents) {
-      const message: StartZoomMessage = { type: "start-zoom" };
-      await browser.tabs.sendMessage(tabId, message);
-    }
     await browser.tabs.setZoom(tabId, zoomFactor);
   } catch {
     console.error(`Unable to set zoom on tab with id=${tabId}`);
@@ -182,7 +169,7 @@ async function onZoomReset(
     .map((tab) => tab.id);
 
   await setZoomFactorByUrl({ width, height }, url, zoomFactor);
-  await setZoom(tabId, zoomFactor, { suppressZoomEvents: false });
+  await setZoom(tabId, zoomFactor);
   await Promise.allSettled(
     tabIdsToZoom.map(async (tabId) => {
       const monitorKey = await sendGetMonitorKeyMessage(tabId);

@@ -15,20 +15,6 @@ function getKey(): MonitorKey {
   return { width, height };
 }
 
-let { width: prevWidth, height: prevHeight } = getKey();
-let { devicePixelRatio: prevDevicePixelRatio } = window;
-
-let isZooming = false;
-let isZoomingTimeout: number | undefined = undefined;
-
-function startZoom(): void {
-  window.clearTimeout(isZoomingTimeout);
-  isZooming = true;
-  isZoomingTimeout = window.setTimeout(() => {
-    isZooming = false;
-  }, 1000);
-}
-
 function sendZoomChangeMessage(): void {
   const { width, height } = getKey();
   const message: ZoomChangeMessage = {
@@ -39,33 +25,33 @@ function sendZoomChangeMessage(): void {
   browser.runtime.sendMessage(message);
 }
 
-function onResizeListener(): void {
-  const { width, height } = getKey();
-  if (prevWidth === width && prevHeight === height) {
-    const { devicePixelRatio } = window;
-    if (prevDevicePixelRatio === devicePixelRatio || isZooming) {
+function getOnResizeListener(): () => void {
+  let { width: prevWidth, height: prevHeight } = getKey();
+
+  return (): void => {
+    const { width, height } = getKey();
+    if (prevWidth === width && prevHeight === height) {
       return;
     }
-    prevDevicePixelRatio = devicePixelRatio;
-    sendZoomChangeMessage();
-    return;
-  }
 
-  prevWidth = width;
-  prevHeight = height;
-  const message: MonitorChangeMessage = {
-    type: "monitor-change",
-    width,
-    height,
+    prevWidth = width;
+    prevHeight = height;
+    const message: MonitorChangeMessage = {
+      type: "monitor-change",
+      width,
+      height,
+    };
+    browser.runtime.sendMessage(message);
   };
-  browser.runtime.sendMessage(message);
 }
 
 function sendPageLoadMessage(): void {
+  const { width, height } = getKey();
+
   const message: PageLoadMessage = {
     type: "page-load",
-    width: prevWidth,
-    height: prevHeight,
+    width: width,
+    height: height,
   };
   browser.runtime.sendMessage(message);
 }
@@ -89,10 +75,6 @@ const onMessageListener: browser.Runtime.OnMessageListenerCallback = (
       };
       sendResponse(response);
       break;
-    case "start-zoom":
-      startZoom();
-      sendResponse(true);
-      break;
   }
 
   return true;
@@ -112,6 +94,16 @@ function onKeyDownListener(e: KeyboardEvent): void {
   if (e.key === "0") {
     e.preventDefault();
     sendZoomResetMessage();
+  } else if (e.key === "-") {
+    sendZoomChangeMessage();
+  } else if (e.key === "=") {
+    sendZoomChangeMessage();
+  }
+}
+
+function onWheelListener(e: WheelEvent): void {
+  if (e.ctrlKey || e.metaKey) {
+    sendZoomChangeMessage();
   }
 }
 
@@ -121,11 +113,12 @@ function onPageShowListener(e: PageTransitionEvent) {
   }
 }
 
-
 sendPageLoadMessage();
 window.addEventListener("pageshow", onPageShowListener);
 
+const onResizeListener = getOnResizeListener();
 window.addEventListener("resize", onResizeListener);
 window.addEventListener("keydown", onKeyDownListener);
+window.addEventListener("wheel", onWheelListener);
 
 browser.runtime.onMessage.addListener(onMessageListener);

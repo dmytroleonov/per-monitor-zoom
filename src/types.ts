@@ -45,8 +45,7 @@ export type BackgroundMessage =
   | ZoomResetMessage;
 
 export type GetMonitorKeyMessage = BaseMessage<"get-monitor-key", {}>;
-export type StartZoomMessage = BaseMessage<"start-zoom", {}>;
-export type ContentMessage = GetMonitorKeyMessage | StartZoomMessage;
+export type ContentMessage = GetMonitorKeyMessage;
 
 export type MonitorKeyMessage = BaseMessage<"monitor-key", MonitorKey>;
 export type ContentResponseMessage = MonitorKeyMessage;
